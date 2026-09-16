@@ -28,30 +28,32 @@ bot.on('callback_query', async (query) => {
 
     if (data.startsWith('approve_')) {
         const parts = data.split('_');
-        // تنظيف اسم المستخدم لمنع أخطاء مسار الفايربيس
-        const username = parts[1] ? parts[1].trim().replace(/[^a-zA-Z0-9]/g, "") : null;
+        
+        // تنظيف اسم المستخدم أو رقم الهاتف وإزالة علامة @ والرموز غير الصالحة للمسار
+        let userKey = parts[1] ? parts[1].trim().replace('@', '') : null;
         const amountToAdd = parseFloat(parts[2]);
 
-        if (!username || isNaN(amountToAdd)) {
+        if (!userKey || isNaN(amountToAdd)) {
             return await bot.answerCallbackQuery(query.id, { text: "❌ خطأ في صيغة بيانات الزر", show_alert: true });
         }
 
         try {
-            // إزالة أي شرطة مائلة زائدة من رابط الفايربيس
             const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
 
-            // 1. جلب الرصيد الحالي
-            const getRes = await axios.get(`${cleanDbUrl}/users/${username}/balance.json`);
+            // 1. جلب الرصيد الحالي للمستخدم من Firebase
+            const getRes = await axios.get(`${cleanDbUrl}/users/${userKey}/balance.json`);
             let currentBalance = parseFloat(getRes.data) || 0;
             let newBalance = currentBalance + amountToAdd;
 
-            // 2. تحديث الرصيد الجديد
-            await axios.put(`${cleanDbUrl}/users/${username}/balance.json`, newBalance);
+            // 2. تحديث الرصيد بصيغة JSON مقبولة في Firebase
+            await axios.put(`${cleanDbUrl}/users/${userKey}/balance.json`, JSON.stringify(newBalance), {
+                headers: { 'Content-Type': 'application/json' }
+            });
 
-            // 3. تأكيد العملية للتليجرام
+            // 3. تأكيد العملية في التليجرام
             await bot.answerCallbackQuery(query.id, { text: `✅ تم إضافة ${amountToAdd} USDT` });
             await bot.editMessageText(
-                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${username}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
+                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${userKey}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
                 { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' }
             );
         } catch (error) {
