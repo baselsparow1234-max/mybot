@@ -14,73 +14,65 @@ app.get('/', (req, res) => res.send('Server is Running!'));
 
 app.post(`/bot${token}`, async (req, res) => {
     try {
-        await bot.processUpdate(req.body);
+        const update = req.body;
+        if (update && update.callback_query) {
+            await handleCallbackQuery(update.callback_query);
+        } else {
+            await bot.processUpdate(update);
+        }
     } catch (err) {
-        console.error("Update processing error:", err);
+        console.error("Webhook Error:", err);
     }
     res.sendStatus(200);
 });
 
-bot.on('callback_query', async (query) => {
-    const data = query.data; 
+async function handleCallbackQuery(query) {
+    const data = query.data;
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
-    if (data.startsWith('approve_')) {
-        const parts = data.split('_');
-        
-        // استخراج الاسم والمبلغ
-        const rawUser = parts[1] ? parts[1].trim() : null;
+    if (data.startsWith('approve:')) {
+        const parts = data.split(':');
+        const cleanUser = parts[1];
         const amountToAdd = parseFloat(parts[2]);
 
-        if (!rawUser || isNaN(amountToAdd)) {
+        if (!cleanUser || isNaN(amountToAdd)) {
             return await bot.answerCallbackQuery(query.id, { text: "❌ خطأ في بيانات الزر", show_alert: true });
         }
 
-        // نفس دالة تنظيف المفتاح المستخدمة في app.js الخاص بالموقع تماماً
-        const cleanKey = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
-
         try {
             const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
-            // المسار المطابق للموقع: users/cleanKey.json
-            const targetUrl = `${cleanDbUrl}/users/${cleanKey}.json`;
+            const targetUrl = `${cleanDbUrl}/users/${cleanKey = cleanUser}.json`;
 
-            // 1. جلب بيانات المستخدم الحالية
             const getRes = await axios.get(targetUrl);
             const userData = getRes.data;
 
-            if (!userData) {
-                return await bot.answerCallbackQuery(query.id, { 
-                    text: `❌ لم يتم العثور على المستخدم (${cleanKey}) في القاعدة!`, 
-                    show_alert: true 
-                });
+            let currentBalance = 0;
+            if (userData && userData.balance !== undefined) {
+                currentBalance = parseFloat(userData.balance) || 0;
             }
 
-            // 2. حساب الرصيد الجديد
-            let currentBalance = parseFloat(userData.balance) || 0;
             let newBalance = currentBalance + amountToAdd;
 
-            // 3. تحديث حقل الرصيد فقط داخل نفس الكائن بدون مسح باقي البيانات (كلمة السر، الإيميل، إلخ)
-            const balanceUrl = `${cleanDbUrl}/users/${cleanKey}/balance.json`;
+            const balanceUrl = `${cleanDbUrl}/users/${cleanUser}/balance.json`;
             await axios.put(balanceUrl, JSON.stringify(newBalance), {
                 headers: { 'Content-Type': 'application/json' }
             });
 
-            // 4. إشعار نجاح العملية والتعديل في تليجرام
             await bot.answerCallbackQuery(query.id, { text: `✅ تم إضافة ${amountToAdd} USDT` });
             await bot.editMessageText(
-                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${rawUser}\n🔑 **المفتاح في القاعدة:** ${cleanKey}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
+                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${cleanUser}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
                 { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' }
             );
         } catch (error) {
-            console.error("Firebase Update Error:", error.response ? error.response.data : error.message);
-            await bot.answerCallbackQuery(query.id, { text: "❌ حدث خطأ أثناء التحديث في الفايربيس", show_alert: true });
+            console.error("Firebase Error:", error.message);
+            await bot.answerCallbackQuery(query.id, { text: "❌ فشل التحديث في الفايربيس", show_alert: true });
         }
-    } else if (data.startsWith('reject_')) {
+    } else if (data.startsWith('reject:')) {
         await bot.answerCallbackQuery(query.id, { text: "تم الرفض" });
         await bot.editMessageText(`❌ **تم رفض طلب الإيداع**`, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
     }
-});
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
