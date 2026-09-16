@@ -8,10 +8,11 @@ const FIREBASE_DB_URL = 'https://chekinroad-afa14-default-rtdb.firebaseio.com';
 const app = express();
 app.use(express.json());
 
-const bot = new TelegramBot(token);
+const bot = new TelegramBot(token, { polling: false });
 
 app.get('/', (req, res) => res.send('Server is Running!'));
 
+// معالجة تحديثات الويب هوك بشكل متزامن
 app.post(`/bot${token}`, async (req, res) => {
     try {
         await bot.processUpdate(req.body);
@@ -28,9 +29,7 @@ bot.on('callback_query', async (query) => {
 
     if (data.startsWith('approve_')) {
         const parts = data.split('_');
-        
-        // تنظيف اسم المستخدم أو رقم الهاتف وإزالة علامة @ والرموز غير الصالحة للمسار
-        let userKey = parts[1] ? parts[1].trim().replace('@', '') : null;
+        const userKey = parts[1] ? parts[1].trim() : null;
         const amountToAdd = parseFloat(parts[2]);
 
         if (!userKey || isNaN(amountToAdd)) {
@@ -40,24 +39,31 @@ bot.on('callback_query', async (query) => {
         try {
             const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
 
-            // 1. جلب الرصيد الحالي للمستخدم من Firebase
-            const getRes = await axios.get(`${cleanDbUrl}/users/${userKey}/balance.json`);
+            // 1. محاولة جلب الرصيد من مسار الجذر أولاً ثم من مسار users
+            let targetPath = `${cleanDbUrl}/${userKey}/balance.json`;
+            let getRes = await axios.get(targetPath);
+
+            if (getRes.data === null) {
+                targetPath = `${cleanDbUrl}/users/${userKey}/balance.json`;
+                getRes = await axios.get(targetPath);
+            }
+
             let currentBalance = parseFloat(getRes.data) || 0;
             let newBalance = currentBalance + amountToAdd;
 
-            // 2. تحديث الرصيد بصيغة JSON مقبولة في Firebase
-            await axios.put(`${cleanDbUrl}/users/${userKey}/balance.json`, JSON.stringify(newBalance), {
+            // 2. تحديث الرصيد بصيغة JSON مقبولة
+            await axios.put(targetPath, JSON.stringify(newBalance), {
                 headers: { 'Content-Type': 'application/json' }
             });
 
-            // 3. تأكيد العملية في التليجرام
+            // 3. التأكيد والتحديث في التليجرام
             await bot.answerCallbackQuery(query.id, { text: `✅ تم إضافة ${amountToAdd} USDT` });
             await bot.editMessageText(
                 `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${userKey}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
                 { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' }
             );
         } catch (error) {
-            console.error("Firebase Error:", error.response ? error.response.data : error.message);
+            console.error("Firebase Error Details:", error.response ? error.response.data : error.message);
             await bot.answerCallbackQuery(query.id, { text: "❌ فشلت عملية التحديث في الفايربيس", show_alert: true });
         }
     } else if (data.startsWith('reject_')) {
