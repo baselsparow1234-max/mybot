@@ -42,7 +42,7 @@ async function handleCallbackQuery(query) {
 
         try {
             const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
-            const targetUrl = `${cleanDbUrl}/users/${cleanUser}.json`;
+            const targetUrl = `${cleanDbUrl}/users/${cleanKey = cleanUser}.json`;
 
             const getRes = await axios.get(targetUrl);
             const userData = getRes.data;
