@@ -22,36 +22,43 @@ app.post(`/bot${token}`, async (req, res) => {
 });
 
 bot.on('callback_query', async (query) => {
-    const data = query.data; 
+    const data = query.data; // مثال: approve_123456789_5
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
     if (data.startsWith('approve_')) {
-        // مفترض تكون الصيغة: approve_username_amount
+        // الصيغة: approve_userId_amount
         const parts = data.split('_');
-        const username = parts[1];
+        const userId = parts[1]; // رقم الـ ID أو رقم الحساب
         const amountToAdd = parseFloat(parts[2]);
 
-        // للتحقق من سلامة البيانات المرسلة من الزر
-        if (!username || isNaN(amountToAdd)) {
-            return await bot.answerCallbackQuery(query.id, { text: "❌ خطأ في صيغة البيانات المرفقة بالزر", show_alert: true });
+        if (!userId || isNaN(amountToAdd)) {
+            return await bot.answerCallbackQuery(query.id, { text: "❌ خطأ في بيانات الزر", show_alert: true });
         }
 
         try {
-            // 1. جلب الرصيد الحالي
-            const getRes = await axios.get(`${FIREBASE_DB_URL}/users/${username}/balance.json`);
+            // 1. جلب الرصيد باستخدام الـ ID أو الرقم
+            const getRes = await axios.get(`${FIREBASE_DB_URL}/users/${userId}/balance.json`);
             let currentBalance = parseFloat(getRes.data) || 0;
             let newBalance = currentBalance + amountToAdd;
 
-            // 2. تحديث الرصيد الجديد
-            await axios.put(`${FIREBASE_DB_URL}/users/${username}/balance.json`, newBalance);
+            // 2. تحديث الرصيد الجديد في Firebase
+            await axios.put(`${FIREBASE_DB_URL}/users/${userId}/balance.json`, newBalance);
 
-            // 3. الرد والتأكيد
+            // 3. تأكيد الإضافة للأدمن
             await bot.answerCallbackQuery(query.id, { text: `✅ تم إضافة ${amountToAdd} USDT` });
             await bot.editMessageText(
-                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n👤 **المستخدم:** ${username}\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
+                `✅ **تمت الموافقة وإضافة الرصيد بنجاح!**\n\n🆔 **رقم المستخدم:** \`${userId}\`\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **الرصيد الجديد:** ${newBalance} USDT`,
                 { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' }
             );
+
+            // 4. إرسال إشعار للمستخدم نفسه بإن رصيده تم شحنه (اختياري)
+            try {
+                await bot.sendMessage(userId, `🎉 **تم شحن حسابك بنجاح!**\n💰 **المبلغ المضاف:** ${amountToAdd} USDT\n📈 **رصيدك الحالي:** ${newBalance} USDT`, { parse_mode: 'Markdown' });
+            } catch (e) {
+                console.log("لم يتم إرسال إشعار للمستخدم المباشر");
+            }
+
         } catch (error) {
             console.error("Firebase Error:", error.response ? error.response.data : error.message);
             await bot.answerCallbackQuery(query.id, { text: "❌ فشلت عملية التحديث في الفايربيس", show_alert: true });
