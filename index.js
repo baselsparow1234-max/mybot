@@ -1,3 +1,4 @@
+  
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
@@ -31,7 +32,7 @@ async function handleCallbackQuery(query) {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
-    // --- معالجة الإيداع (الكود القديم الخاص بك كما هو) ---
+    // --- معالجة الإيداع (الكود الخاص بك بدون أي تعديل) ---
     if (data.startsWith('approve:')) {
         const parts = data.split(':');
         const cleanUser = parts[1];
@@ -74,7 +75,7 @@ async function handleCallbackQuery(query) {
         await bot.editMessageText(`❌ **تم رفض طلب الإيداع**`, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
     }
 
-    // --- معالجة طلبات السحب (الجديد) ---
+    // --- معالجة طلبات السحب (الجديد والمطابق للإيداع) ---
     else if (data.startsWith('wapprove:')) {
         const parts = data.split(':');
         const cleanUser = parts[1];
@@ -96,7 +97,6 @@ async function handleCallbackQuery(query) {
                 currentBalance = parseFloat(userData.balance) || 0;
             }
 
-            // التحقق من وجود رصيد كافٍ للسحب
             if (currentBalance < amountToDeduct) {
                 return await bot.answerCallbackQuery(query.id, { text: "❌ رصيد المستخدم غير كافٍ للخصم!", show_alert: true });
             }
