@@ -12,13 +12,12 @@ const bot = new TelegramBot(token);
 
 app.get('/', (req, res) => res.send('Server is Running!'));
 
+// معالجة طلبات الـ Webhook مباشرة
 app.post(`/bot${token}`, async (req, res) => {
     try {
         const update = req.body;
         if (update && update.callback_query) {
             await handleCallbackQuery(update.callback_query);
-        } else {
-            await bot.processUpdate(update);
         }
     } catch (err) {
         console.error("Webhook Error:", err);
@@ -31,7 +30,7 @@ async function handleCallbackQuery(query) {
     const chatId = query.message.chat.id;
     const messageId = query.message.message_id;
 
-    // --- معالجة الإيداع (الكود الخاص بك بدون أي تعديل) ---
+    // 1. معالجة موافقة الإيداع
     if (data.startsWith('approve:')) {
         const parts = data.split(':');
         const cleanUser = parts[1];
@@ -69,12 +68,14 @@ async function handleCallbackQuery(query) {
             console.error("Firebase Error:", error.message);
             await bot.answerCallbackQuery(query.id, { text: "❌ فشل التحديث في الفايربيس", show_alert: true });
         }
-    } else if (data.startsWith('reject:')) {
+    } 
+    // 2. معالجة رفض الإيداع
+    else if (data.startsWith('reject:')) {
         await bot.answerCallbackQuery(query.id, { text: "تم الرفض" });
         await bot.editMessageText(`❌ **تم رفض طلب الإيداع**`, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
     }
 
-    // --- معالجة طلبات السحب (الجديد والمطابق للإيداع) ---
+    // 3. معالجة موافقة السحب وخصم الرصيد
     else if (data.startsWith('wapprove:')) {
         const parts = data.split(':');
         const cleanUser = parts[1];
@@ -96,6 +97,7 @@ async function handleCallbackQuery(query) {
                 currentBalance = parseFloat(userData.balance) || 0;
             }
 
+            // التحقق من كفاية الرصيد قبل الخصم
             if (currentBalance < amountToDeduct) {
                 return await bot.answerCallbackQuery(query.id, { text: "❌ رصيد المستخدم غير كافٍ للخصم!", show_alert: true });
             }
@@ -116,7 +118,9 @@ async function handleCallbackQuery(query) {
             console.error("Firebase Error:", error.message);
             await bot.answerCallbackQuery(query.id, { text: "❌ فشل التحديث في الفايربيس", show_alert: true });
         }
-    } else if (data.startsWith('wreject:')) {
+    } 
+    // 4. معالجة رفض السحب
+    else if (data.startsWith('wreject:')) {
         await bot.answerCallbackQuery(query.id, { text: "تم الرفض" });
         await bot.editMessageText(`❌ **تم رفض طلب السحب**`, { chat_id: chatId, message_id: messageId, parse_mode: 'Markdown' });
     }
