@@ -2,6 +2,7 @@ const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
 const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
+// دالة جلب اسم المستخدم الذكية
 function getLoggedInUser() {
     let u = localStorage.getItem('brt_user') || "";
 
@@ -16,15 +17,10 @@ function getLoggedInUser() {
     return u;
 }
 
-// جلب الرصيد بنفس الطريقة التي يقرأ بها السيرفر
+// جلب الرصيد
 async function loadUserBalance() {
-    const rawUser = getLoggedInUser();
+    let rawUser = getLoggedInUser();
     const balanceElement = document.getElementById('userCurrentBalance');
-    const inputElement = document.getElementById('usernameInput');
-
-    if (inputElement && !inputElement.value && rawUser) {
-        inputElement.value = rawUser;
-    }
 
     if (!rawUser) {
         if (balanceElement) balanceElement.innerText = "0.00";
@@ -62,14 +58,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // إرسال طلب السحب للتليجرام
 async function submitWithdrawal() {
-    const rawUser = getLoggedInUser();
+    let rawUser = getLoggedInUser();
 
+    // إذا لم يجد اسم المستخدم في الصفحة أو الذاكرة، يطلبه منك في نافذة صغيرة تلقائياً
     if (!rawUser) {
-        alert("❌ يرجى إدخال اسم حسابك أولاً.");
+        rawUser = prompt("يرجى إدخال اسم حسابك لإكمال السحب:");
+    }
+
+    if (!rawUser || rawUser.trim() === "") {
+        alert("❌ لا يمكن إرسال الطلب بدون كتابة اسم الحساب.");
         return;
     }
 
-    const cleanUser = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
+    const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9]/g, "_");
 
     const amountInput = document.getElementById('withdrawAmount');
     const addressInput = document.getElementById('walletAddress');
@@ -126,6 +127,6 @@ async function submitWithdrawal() {
         }
     } catch (error) {
         console.error("خطأ في إرسال طلب السحب:", error);
-        alert("حدث خطأ في الاتصال بالسيرفر: " + error.message);
+        alert("حدث خطأ في الاتصال: " + error.message);
     }
 }
