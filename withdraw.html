@@ -15,6 +15,8 @@
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
         .submit-btn { width: 100%; background: #ef4444; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
         .balance-info { background: #f3f4f6; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold; color: #1f2937; }
+        .user-row { display: flex; gap: 8px; }
+        .fetch-btn { background: #2563eb; color: white; border: none; border-radius: 8px; padding: 0 15px; font-weight: bold; cursor: pointer; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -27,7 +29,10 @@
         <div class="confirm-section">
             <div class="form-group">
                 <label>اسم الحساب / المستخدم:</label>
-                <input type="text" id="usernameInput" placeholder="أدخل اسم حسابك" oninput="loadUserBalance()">
+                <div class="user-row">
+                    <input type="text" id="usernameInput" placeholder="أدخل اسم حسابك" onkeyup="loadUserBalance()">
+                    <button type="button" class="fetch-btn" onclick="loadUserBalance()">جلب الرصيد</button>
+                </div>
             </div>
 
             <div class="balance-info">
