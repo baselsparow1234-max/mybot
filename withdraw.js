@@ -1,97 +1,69 @@
 const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
-const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
-function getLoggedInUser() {
-    let u = localStorage.getItem('brt_user') || "";
+// 1. دالة جلب الرصيد الحقيقي للمستخدم من Firebase عبر Vercel
+async function loadUserBalance() {
+    const userInput = document.getElementById('usernameInput');
+    const balanceSpan = document.getElementById('userCurrentBalance');
+    const user = userInput ? userInput.value.trim() : "";
 
-    const inputElement = document.getElementById('usernameInput');
-    if (inputElement && inputElement.value && inputElement.value.trim() !== "") {
-        u = inputElement.value.trim();
+    if (!user) {
+        alert("⚠️ يرجى إدخال اسم الحساب أولاً.");
+        return;
     }
 
-    if (typeof u === 'string') {
-        u = u.replace(/"/g, '').trim();
+    balanceSpan.innerText = "جاري التحميل...";
+
+    try {
+        const res = await fetch(`https://mybot-six-lilac.vercel.app/api/balance?user=${encodeURIComponent(user)}`);
+        const data = await res.json();
+        
+        if (data && data.balance !== undefined) {
+            balanceSpan.innerText = data.balance;
+        } else {
+            balanceSpan.innerText = "0";
+        }
+    } catch (err) {
+        console.error(err);
+        balanceSpan.innerText = "0";
     }
-    return u;
 }
 
-async function loadUserBalance() {
-    let rawUser = getLoggedInUser();
-    const balanceElement = document.getElementById('userCurrentBalance');
+// 2. دالة إرسال طلب السحب للتليجرام
+async function submitWithdrawal() {
+    const userInput = document.getElementById('usernameInput');
+    const addressInput = document.getElementById('walletAddress');
+    const amountInput = document.getElementById('withdrawAmount');
+    const networkInput = document.getElementById('withdrawNetwork');
+
+    const rawUser = userInput ? userInput.value.trim() : "";
+    const address = addressInput ? addressInput.value.trim() : "";
+    const amount = amountInput ? parseFloat(amountInput.value) : 0;
+    const network = networkInput ? networkInput.value : "TRC20";
 
     if (!rawUser) {
-        if (balanceElement) balanceElement.innerText = "0.00";
+        alert("⚠️ يرجى إدخال اسم الحساب.");
+        return;
+    }
+    if (!address) {
+        alert("⚠️ يرجى إدخال عنوان المحفظة.");
+        return;
+    }
+    if (!amount || amount <= 0) {
+        alert("⚠️ يرجى إدخال مبلغ سحب صحيح.");
         return;
     }
 
     const cleanUser = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
 
-    try {
-        const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
-        const res = await fetch(`${cleanDbUrl}/users/${cleanUser}.json`);
-        const userData = await res.json();
-
-        let currentBalance = 0;
-
-        if (userData !== null) {
-            if (typeof userData === 'object') {
-                currentBalance = userData.balance ?? userData.amount ?? userData.wallet ?? userData.balanceAmount ?? 0;
-            } else if (typeof userData === 'number' || typeof userData === 'string') {
-                currentBalance = userData;
-            }
-        }
-
-        if (balanceElement) {
-            balanceElement.innerText = parseFloat(currentBalance || 0).toFixed(2);
-        }
-    } catch (e) {
-        console.error("خطأ في جلب الرصيد:", e);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadUserBalance();
-});
-
-async function submitWithdrawal() {
-    let rawUser = getLoggedInUser();
-
-    if (!rawUser) {
-        rawUser = prompt("يرجى إدخال اسم حسابك لإكمال السحب:");
-    }
-
-    if (!rawUser || rawUser.trim() === "") {
-        alert("❌ لا يمكن إرسال الطلب بدون كتابة اسم الحساب.");
-        return;
-    }
-
-    const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9]/g, "_");
-
-    const amountInput = document.getElementById('withdrawAmount');
-    const addressInput = document.getElementById('walletAddress');
-    const networkInput = document.getElementById('withdrawNetwork');
-
-    const amount = parseFloat(amountInput ? amountInput.value : 0);
-    const address = addressInput ? addressInput.value.trim() : "";
-    const network = networkInput ? networkInput.value : "TRC20";
-
-    if (!amount || amount <= 0) {
-        alert("يرجى إدخال مبلغ سحب صحيح.");
-        return;
-    }
-
-    if (!address) {
-        alert("يرجى إدخال عنوان المحفظة.");
-        return;
-    }
-
+    // نص الرسالة المطابق للإيداع
     const messageText = `📤 **طلب سحب جديد**\n\n` +
                         `👤 **المستخدم:** ${rawUser}\n` +
                         `💰 **المبلغ المطلوب:** ${amount} USDT\n` +
                         `🌐 **الشبكة:** ${network}\n` +
                         `🏦 **العنوان:** \`${address}\``;
 
+    // أزرار التحكم في التليجرام
     const replyMarkup = {
         inline_keyboard: [
             [
@@ -117,12 +89,10 @@ async function submitWithdrawal() {
 
         if (data.ok) {
             alert("✅ تم إرسال طلب السحب بنجاح إلى التليجرام!");
-            window.location.href = "home.html";
         } else {
-            alert("❌ حدث خطأ من التليجرام: " + (data.description || "غير معروف"));
+            alert("❌ خطأ من التليجرام: " + data.description);
         }
     } catch (error) {
-        console.error("خطأ في إرسال طلب السحب:", error);
-        alert("حدث خطأ في الاتصال: " + error.message);
+        alert("❌ حدث خطأ في الاتصال: " + error.message);
     }
 }
