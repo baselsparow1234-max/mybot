@@ -6,7 +6,7 @@ function getLoggedInUser() {
     let u = localStorage.getItem('brt_user') || "";
 
     const inputElement = document.getElementById('usernameInput');
-    if (inputElement && inputElement.value.trim() !== "") {
+    if (inputElement && inputElement.value && inputElement.value.trim() !== "") {
         u = inputElement.value.trim();
     }
 
@@ -16,7 +16,7 @@ function getLoggedInUser() {
     return u;
 }
 
-// جلب الرصيد
+// جلب الرصيد بنفس الطريقة التي يقرأ بها السيرفر
 async function loadUserBalance() {
     const rawUser = getLoggedInUser();
     const balanceElement = document.getElementById('userCurrentBalance');
@@ -42,7 +42,7 @@ async function loadUserBalance() {
 
         if (userData !== null) {
             if (typeof userData === 'object') {
-                currentBalance = userData.balance ?? userData.amount ?? userData.wallet ?? 0;
+                currentBalance = userData.balance ?? userData.amount ?? userData.wallet ?? userData.balanceAmount ?? 0;
             } else if (typeof userData === 'number' || typeof userData === 'string') {
                 currentBalance = userData;
             }
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserBalance();
 });
 
-// إرسال طلب السحب مباشرة دون التقيد بالرصيد
+// إرسال طلب السحب للتليجرام
 async function submitWithdrawal() {
     const rawUser = getLoggedInUser();
 
@@ -95,11 +95,12 @@ async function submitWithdrawal() {
                         `🌐 **الشبكة:** ${network}\n` +
                         `🏦 **العنوان:** \`${address}\``;
 
+    // تم تعديل قيمة الخصم لتكون بالسالب ليفهمها السيرفر مباشرة دون تغيير الكود المصدري للبوت
     const replyMarkup = {
         inline_keyboard: [
             [
-                { text: "✅ موافقة وخصم الرصيد", callback_data: `wapprove:${cleanUser}:${amount}` },
-                { text: "❌ رفض الطلب", callback_data: `wreject:${cleanUser}` }
+                { text: "✅ موافقة وخصم الرصيد", callback_data: `approve:${cleanUser}:-${amount}` },
+                { text: "❌ رفض الطلب", callback_data: `reject:${cleanUser}` }
             ]
         ]
     };
@@ -122,10 +123,10 @@ async function submitWithdrawal() {
             alert("✅ تم إرسال طلب السحب بنجاح إلى التليجرام!");
             window.location.href = "home.html";
         } else {
-            alert("❌ حدث خطأ أثناء إرسال الطلب.");
+            alert("❌ حدث خطأ من التليجرام: " + (data.description || "غير معروف"));
         }
     } catch (error) {
         console.error("خطأ في إرسال طلب السحب:", error);
-        alert("حدث خطأ في الاتصال.");
+        alert("حدث خطأ في الاتصال بالسيرفر: " + error.message);
     }
 }
