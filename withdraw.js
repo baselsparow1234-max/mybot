@@ -16,7 +16,7 @@ function getLoggedInUser() {
     return u;
 }
 
-// جلب الرصيد إن وجد في الفايربيس
+// جلب الرصيد
 async function loadUserBalance() {
     const rawUser = getLoggedInUser();
     const balanceElement = document.getElementById('userCurrentBalance');
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserBalance();
 });
 
-// إرسال طلب السحب للتليجرام مباشرة
+// إرسال طلب السحب مباشرة دون التقيد بالرصيد
 async function submitWithdrawal() {
     const rawUser = getLoggedInUser();
 
