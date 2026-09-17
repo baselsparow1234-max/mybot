@@ -2,13 +2,8 @@ const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
 const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
-// قراءة اسم المستخدم إما من حقل الإدخال أو من ذاكرة المتصفح
-function getUserName() {
-    const inputElement = document.getElementById('usernameInput');
-    if (inputElement && inputElement.value.trim() !== '') {
-        return inputElement.value.trim().replace(/[^a-zA-Z0-9]/g, "_");
-    }
-    
+// قراءة اسم الحساب المسجل بصفحة تسجيل الدخول تماماً كما يفعل كود الإيداع
+function getLoggedInUser() {
     let u = localStorage.getItem('brt_user') || 
             localStorage.getItem('user') || 
             localStorage.getItem('username') || 
@@ -17,15 +12,17 @@ function getUserName() {
     if (typeof u === 'string') {
         u = u.replace(/"/g, '').trim();
     }
-    return u.replace(/[^a-zA-Z0-9]/g, "_");
+    // تنظيف الاسم من الرموز ليتطابق مع هيكلة الفايربيس
+    return u ? u.replace(/[^a-zA-Z0-9]/g, "_") : "";
 }
 
-// 1. جلب الرصيد الحقيقي وعرضه في الصفحة عند التحميل أو عند كتابة الاسم
+// 1. جلب الرصيد المباشر للمستخدم المسجل فور فتح الصفحة
 async function loadUserBalance() {
-    const currentUser = getUserName();
+    const currentUser = getLoggedInUser();
     const balanceElement = document.getElementById('userCurrentBalance');
 
     if (!currentUser) {
+        console.warn("لم يتم العثور على اسم مستخدم مسجل في الجلسة.");
         if (balanceElement) balanceElement.innerText = "0.00";
         return;
     }
@@ -43,27 +40,19 @@ async function loadUserBalance() {
             }
         }
     } catch (e) {
-        console.error("خطأ في جلب الرصيد:", e);
+        console.error("خطأ في جلب الرصيد من الفايربيس:", e);
     }
 }
 
-// التعبئة التلقائية لاسم الحساب إن وجد في الذاكرة
-document.addEventListener('DOMContentLoaded', () => {
-    let storedUser = localStorage.getItem('brt_user') || localStorage.getItem('user') || localStorage.getItem('email') || "";
-    if (storedUser) {
-        storedUser = storedUser.replace(/"/g, '').trim();
-        const inputElement = document.getElementById('usernameInput');
-        if (inputElement) inputElement.value = storedUser;
-    }
-    loadUserBalance();
-});
+// تشغيل جلب الرصيد تلقائياً عند فتح الشاشة
+document.addEventListener('DOMContentLoaded', loadUserBalance);
 
 // 2. إرسال طلب السحب للتليجرام
 async function submitWithdrawal() {
-    const currentUser = getUserName();
+    const currentUser = getLoggedInUser();
 
     if (!currentUser) {
-        alert("يرجى إدخال اسم حسابك أولاً.");
+        alert("❌ لم يتم التعرف على حسابك، يرجى تسجيل الدخول أولاً من صفحة الدخول.");
         return;
     }
 
@@ -85,7 +74,7 @@ async function submitWithdrawal() {
         return;
     }
 
-    // التحقق من أن المبلغ المطلوب لا يتجاوز الرصيد الحالي
+    // فحص الرصيد الحقيقي المجلوب من الشاشة
     const balanceElement = document.getElementById('userCurrentBalance');
     const currentBalance = balanceElement ? parseFloat(balanceElement.innerText) : 0;
     
