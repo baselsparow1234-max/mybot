@@ -2,11 +2,10 @@ const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
 const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
-// قراءة اسم المستخدم إما من حقل الإدخال أو من ذاكرة المتصفح
 function getUserName() {
     const inputElement = document.getElementById('usernameInput');
     if (inputElement && inputElement.value.trim() !== '') {
-        return inputElement.value.trim().replace(/[^a-zA-Z0-9]/g, "_");
+        return inputElement.value.trim();
     }
     
     let u = localStorage.getItem('brt_user') || 
@@ -17,18 +16,21 @@ function getUserName() {
     if (typeof u === 'string') {
         u = u.replace(/"/g, '').trim();
     }
-    return u.replace(/[^a-zA-Z0-9]/g, "_");
+    return u;
 }
 
-// 1. جلب الرصيد الحقيقي وعرضه في الصفحة عند التحميل أو عند كتابة الاسم
+// جلب الرصيد الحقيقي من الفايربيس
 async function loadUserBalance() {
-    const currentUser = getUserName();
+    const rawUser = getUserName();
     const balanceElement = document.getElementById('userCurrentBalance');
 
-    if (!currentUser) {
+    if (!rawUser) {
         if (balanceElement) balanceElement.innerText = "0.00";
         return;
     }
+
+    // تنظيف الاسم ليبحث عنه بنفس هيكلية الفايربيس Exactly
+    const currentUser = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
 
     try {
         const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
@@ -47,7 +49,7 @@ async function loadUserBalance() {
     }
 }
 
-// التعبئة التلقائية لاسم الحساب إن وجد في الذاكرة
+// تحميل تلقائي للذاكرة إن وجدت
 document.addEventListener('DOMContentLoaded', () => {
     let storedUser = localStorage.getItem('brt_user') || localStorage.getItem('user') || localStorage.getItem('email') || "";
     if (storedUser) {
@@ -58,15 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserBalance();
 });
 
-// 2. إرسال طلب السحب للتليجرام
+// إرسال الطلب إلى التليجرام
 async function submitWithdrawal() {
-    const currentUser = getUserName();
+    const rawUser = getUserName();
 
-    if (!currentUser) {
+    if (!rawUser) {
         alert("يرجى إدخال اسم حسابك أولاً.");
         return;
     }
 
+    const currentUser = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
     const amountInput = document.getElementById('withdrawAmount');
     const addressInput = document.getElementById('walletAddress');
     const networkInput = document.getElementById('withdrawNetwork');
@@ -85,7 +88,6 @@ async function submitWithdrawal() {
         return;
     }
 
-    // التحقق من أن المبلغ المطلوب لا يتجاوز الرصيد الحالي
     const balanceElement = document.getElementById('userCurrentBalance');
     const currentBalance = balanceElement ? parseFloat(balanceElement.innerText) : 0;
     
