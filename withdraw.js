@@ -2,7 +2,6 @@ const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
 const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
-// دالة جلب اسم المستخدم الذكية
 function getLoggedInUser() {
     let u = localStorage.getItem('brt_user') || "";
 
@@ -17,7 +16,6 @@ function getLoggedInUser() {
     return u;
 }
 
-// جلب الرصيد
 async function loadUserBalance() {
     let rawUser = getLoggedInUser();
     const balanceElement = document.getElementById('userCurrentBalance');
@@ -56,11 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUserBalance();
 });
 
-// إرسال طلب السحب للتليجرام
 async function submitWithdrawal() {
     let rawUser = getLoggedInUser();
 
-    // إذا لم يجد اسم المستخدم في الصفحة أو الذاكرة، يطلبه منك في نافذة صغيرة تلقائياً
     if (!rawUser) {
         rawUser = prompt("يرجى إدخال اسم حسابك لإكمال السحب:");
     }
