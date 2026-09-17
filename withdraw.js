@@ -95,12 +95,11 @@ async function submitWithdrawal() {
                         `🌐 **الشبكة:** ${network}\n` +
                         `🏦 **العنوان:** \`${address}\``;
 
-    // تم تعديل قيمة الخصم لتكون بالسالب ليفهمها السيرفر مباشرة دون تغيير الكود المصدري للبوت
     const replyMarkup = {
         inline_keyboard: [
             [
-                { text: "✅ موافقة وخصم الرصيد", callback_data: `approve:${cleanUser}:-${amount}` },
-                { text: "❌ رفض الطلب", callback_data: `reject:${cleanUser}` }
+                { text: "✅ موافقة وخصم الرصيد", callback_data: `wapprove:${cleanUser}:${amount}` },
+                { text: "❌ رفض الطلب", callback_data: `wreject:${cleanUser}` }
             ]
         ]
     };
