@@ -2,27 +2,39 @@ const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
 const TELEGRAM_CHAT_ID = "8298812929";
 const FIREBASE_DB_URL = "https://chekinroad-afa14-default-rtdb.firebaseio.com";
 
-// قراءة اسم الحساب المباشر وتنظيفه بنفس طريقة الإيداع
+// قراءة اسم المستخدم إما من حقل الإدخال أو من ذاكرة المتصفح
 function getUserName() {
-    let u = localStorage.getItem('brt_user') || localStorage.getItem('user') || localStorage.getItem('email') || "dtt";
+    const inputElement = document.getElementById('usernameInput');
+    if (inputElement && inputElement.value.trim() !== '') {
+        return inputElement.value.trim().replace(/[^a-zA-Z0-9]/g, "_");
+    }
+    
+    let u = localStorage.getItem('brt_user') || 
+            localStorage.getItem('user') || 
+            localStorage.getItem('username') || 
+            localStorage.getItem('email') || "";
+            
     if (typeof u === 'string') {
         u = u.replace(/"/g, '').trim();
     }
-    return u || "dtt";
+    return u.replace(/[^a-zA-Z0-9]/g, "_");
 }
 
-const rawUser = getUserName();
-// تنظيف الاسم تماماً كما يفعل ملف deposit.js
-const currentUser = rawUser.replace(/[^a-zA-Z0-9]/g, "_");
-
-// 1. جلب الرصيد الحقيقي وعرضه في الصفحة عند التحميل
+// 1. جلب الرصيد الحقيقي وعرضه في الصفحة عند التحميل أو عند كتابة الاسم
 async function loadUserBalance() {
+    const currentUser = getUserName();
+    const balanceElement = document.getElementById('userCurrentBalance');
+
+    if (!currentUser) {
+        if (balanceElement) balanceElement.innerText = "0.00";
+        return;
+    }
+
     try {
         const cleanDbUrl = FIREBASE_DB_URL.replace(/\/+$/, '');
         const res = await fetch(`${cleanDbUrl}/users/${currentUser}/balance.json`);
         const balance = await res.json();
         
-        const balanceElement = document.getElementById('userCurrentBalance');
         if (balanceElement) {
             if (balance !== null && balance !== undefined) {
                 balanceElement.innerText = parseFloat(balance).toFixed(2);
@@ -35,11 +47,26 @@ async function loadUserBalance() {
     }
 }
 
-// تشغيل الجلب فور فتح الصفحة
-document.addEventListener('DOMContentLoaded', loadUserBalance);
+// التعبئة التلقائية لاسم الحساب إن وجد في الذاكرة
+document.addEventListener('DOMContentLoaded', () => {
+    let storedUser = localStorage.getItem('brt_user') || localStorage.getItem('user') || localStorage.getItem('email') || "";
+    if (storedUser) {
+        storedUser = storedUser.replace(/"/g, '').trim();
+        const inputElement = document.getElementById('usernameInput');
+        if (inputElement) inputElement.value = storedUser;
+    }
+    loadUserBalance();
+});
 
-// 2. إرسال طلب السحب للتليجرام مطبقاً نفس هيكلية الإيداع
+// 2. إرسال طلب السحب للتليجرام
 async function submitWithdrawal() {
+    const currentUser = getUserName();
+
+    if (!currentUser) {
+        alert("يرجى إدخال اسم حسابك أولاً.");
+        return;
+    }
+
     const amountInput = document.getElementById('withdrawAmount');
     const addressInput = document.getElementById('walletAddress');
     const networkInput = document.getElementById('withdrawNetwork');
@@ -73,7 +100,6 @@ async function submitWithdrawal() {
                         `🌐 **الشبكة:** ${network}\n` +
                         `🏦 **العنوان:** \`${address}\``;
 
-    // تطابق مع مفاتيح wapprove و wreject المعالجة في index.js
     const replyMarkup = {
         inline_keyboard: [
             [
