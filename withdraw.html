@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سحب الرصيد - Brt Platform</title>
+    <title>سحب الأموال</title>
     <link rel="stylesheet" href="home.style.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -30,7 +30,7 @@
             <div class="form-group">
                 <label>اسم الحساب / المستخدم:</label>
                 <div class="user-row">
-                    <input type="text" id="usernameInput" placeholder="أدخل اسم حسابك" onkeyup="loadUserBalance()">
+                    <input type="text" id="usernameInput" placeholder="أدخل اسم حسابك">
                     <button type="button" class="fetch-btn" onclick="loadUserBalance()">جلب الرصيد</button>
                 </div>
             </div>
@@ -58,7 +58,7 @@
                 <input type="number" id="withdrawAmount" placeholder="أدخل المبلغ">
             </div>
 
-            <button class="submit-btn" onclick="submitWithdrawal()">تأكيد طلب السحب</button>
+            <button type="button" class="submit-btn" onclick="submitWithdrawal()">تأكيد طلب السحب</button>
         </div>
     </div>
 
