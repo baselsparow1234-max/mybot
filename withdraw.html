@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سحب الأموال</title>
+    <link rel="stylesheet" href="home.style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        .deposit-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .back-btn { font-size: 20px; cursor: pointer; text-decoration: none; color: #111827; font-weight: bold; }
+        .confirm-section { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; }
+        .form-group { margin-bottom: 15px; text-align: right; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #374151; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+        .submit-btn { width: 100%; background: #ef4444; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .submit-btn:hover { background-color: #dc2626; }
+        .submit-btn:disabled { background-color: #f3a4a4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="deposit-header">
+            <a href="home.html" class="back-btn">→</a>
+            <h3>سحب الأموال</h3>
+        </div>
+
+        <div class="confirm-section">
+            <div class="form-group">
+                <label>اسم الحساب / المستخدم:</label>
+                <input type="text" id="usernameInput" placeholder="أدخل اسم حسابك">
+            </div>
+
+            <div class="form-group">
+                <label>اختر الشبكة (طريقة السحب):</label>
+                <select id="withdrawNetwork">
+                    <option value="TRC20 (Tron)">TRC20 (Tron)</option>
+                    <option value="BEP20 (BNB Chain)">BEP20 (BNB Chain)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>عنوان المحفظة (Address):</label>
+                <input type="text" id="walletAddress" placeholder="الصق عنوان محفظتك هنا">
+            </div>
+
+            <div class="form-group">
+                <label>المبلغ المراد سحبه (USDT):</label>
+                <input type="number" id="withdrawAmount" placeholder="أدخل المبلغ المطلوب">
+            </div>
+
+            <button type="button" class="submit-btn" onclick="submitWithdrawal()">إرسال طلب السحب</button>
+        </div>
+    </div>
+
+    <script src="withdraw.js"></script>
+</body>
+</html>
