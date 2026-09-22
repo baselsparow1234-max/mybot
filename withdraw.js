@@ -1,3 +1,6 @@
+const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
+const TELEGRAM_CHAT_ID = "8298812929";
+
 async function submitWithdrawal() {
     console.log("submitWithdrawal: بدأت الدالة");
 
@@ -52,14 +55,14 @@ async function submitWithdrawal() {
     console.log("submitWithdrawal: عم أبعت الطلب لتليجرام...", { user, network, amount, address });
 
     try {
-        // ✅ بعتنا الرسالة للفانكشن المخفية بدل ما نبعتها لتلغرام مباشرة
-        // الفانكشن هي يلي فيها التوكن السري، مش هالملف
-        const response = await fetch("/.netlify/functions/send-telegram", {
+        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
                 text: messageText,
-                replyMarkup: replyMarkup
+                parse_mode: "Markdown",
+                reply_markup: replyMarkup
             })
         });
 
