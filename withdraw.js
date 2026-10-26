@@ -1,4 +1,4 @@
-const TELEGRAM_BOT_TOKEN = "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
+const TELEGRAM_BOT_TOKEN = "8976140605:AAFycEBOg9jzewfLvVY0f2t2unD8QIihGQg";
 const TELEGRAM_CHAT_ID = "8298812929";
 
 async function submitWithdrawal() {
