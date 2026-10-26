@@ -1,7 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 
-const token = process.env.TELEGRAM_BOT_TOKEN || "8811735698:AAEIYziXQiaFE7Qxv5oxSywaCbzp8mi-IzA";
+const token = process.env.TELEGRAM_BOT_TOKEN || "8976140605:AAFycEBOg9jzewfLvVY0f2t2unD8QIihGQg";
 const FIREBASE_DB_URL = 'https://chekinroad-afa14-default-rtdb.firebaseio.com';
 
 const bot = new TelegramBot(token);
